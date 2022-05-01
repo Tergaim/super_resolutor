@@ -1,0 +1,15 @@
+{
+    "create_dataset": {
+        "source_folder" : "",
+        "target_folder" : "",
+        "samples_per_image" : 64,
+        "sample_size" : 64,
+        "down_factor" : 2
+    },
+    "training":{
+        "save_folder": "",
+        "train_folder" : "",
+        "n_epochs" : 20,
+        "batch_size": 20
+    }
+}
