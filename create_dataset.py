@@ -1,3 +1,4 @@
+from pyexpat import model
 import numpy as np
 import cv2
 import os
@@ -12,6 +13,7 @@ down_factor = 2
 
 def sample(img):
     downsized = []
+    downsized32 = []
     original = []
     dim = (int(sample_size/down_factor), int(sample_size/down_factor))
     for _ in range(samples_per_image):
@@ -19,11 +21,14 @@ def sample(img):
         y = np.random.randint(0, img.shape[0]-sample_size)
         crop = img[y:y+sample_size, x:x+sample_size]
         original.append(crop)
-        downsized.append(cv2.resize(cv2.resize(crop, dim), (sample_size, sample_size)))
-    return downsized, original
+        downsized32img = cv2.resize(crop.copy(), dim)
+        downsized32.append(downsized32img)
+        downsized.append(cv2.resize(downsized32img.copy(), (sample_size, sample_size)))
+    return downsized32, downsized, original
 
-def save(downsized, original, total):
+def save(downsized32, downsized, original, total):
     for i in range(len(downsized)):
+        cv2.imwrite(os.path.join(target_folder, "downsizedsmall", f"{total}.jpg".zfill(13)), downsized32[i])
         cv2.imwrite(os.path.join(target_folder, "downsized", f"{total}.jpg".zfill(13)), downsized[i])
         cv2.imwrite(os.path.join(target_folder, "original", f"{total}.jpg".zfill(13)), original[i])
         total += 1
@@ -38,14 +43,15 @@ def process():
     print(f"Found {len(list_pictures)} image files. Sampling...")
 
     os.makedirs(target_folder, exist_ok=True)
+    os.makedirs(os.path.join(target_folder, "downsizedsmall"), exist_ok=True)
     os.makedirs(os.path.join(target_folder, "downsized"), exist_ok=True)
     os.makedirs(os.path.join(target_folder, "original"), exist_ok=True)
 
     total = 0
     for filename in tqdm(list_pictures):
         img = cv2.imread(os.path.join(source_folder,filename))
-        downsized, original = sample(img)
-        total = save(downsized, original, total)
+        downsized32, downsized, original = sample(img)
+        total = save(downsized32, downsized, original, total)
         
     print(f"Created {total} data samples. Closing.")
 
@@ -58,13 +64,13 @@ def read_args():
     global down_factor
     
     with open("parameters.json", "r") as read_file:
-        args = json.load(read_file)["create_dataset"]
+        args = json.load(read_file)
 
-    source_folder = args["source_folder"]
-    target_folder = args["target_folder"]
-    samples_per_image = args["samples_per_image"]
-    sample_size = args["sample_size"]
-    down_factor = args["down_factor"]
+    source_folder = args["create_dataset"]["source_folder"]
+    target_folder = args["create_dataset"]["target_folder"]
+    samples_per_image = args["create_dataset"]["samples_per_image"]
+    sample_size = args["model"]["sample_size"]
+    down_factor = args["model"]["down_factor"]
     
 
 if __name__ == "__main__":

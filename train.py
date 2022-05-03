@@ -1,29 +1,59 @@
 import json
 import os
+from matplotlib.style import available
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+from model_postup import FSRCNN
 
-from model import SuperResolutor
-from sample_dataset import SampleDataset
+from model_preup import SuperResolutorUpscaled, SRCNN, VDSR
+from sample_dataset import UpscaledDataset, RegularDataset
 
-args = {}
+model_args = {}
 train_folder = ''
+val_folder = ''
 save_folder = ''
 batch_size = 20
 epochs = 200
 
-writer = SummaryWriter(log_dir="runs/13_1_7")
+writer = SummaryWriter(log_dir="runs/residualrgb")
 
 def psnr(out, original, max_val=1):
     mse = torch.mean((out - original) ** 2)
     return 20 * torch.log10(1.0 / torch.sqrt(mse))
 
+def get_model():
+    available_models = ["SRCNN", "VDSR", "FSRCNN"]
+    if model_args["name"] not in available_models:
+        print(f"The model {model_args['name']} is not (yet?) implemented.")
+        print(f"Possible values: {available_models}")
+        raise NotImplementedError
+    
+    if model_args["name"] == "SRCNN":
+        model = SRCNN()
+    elif model_args["name"] == "VDSR":
+        model = VDSR(model_args["n_layers"])
+    elif model_args["name"] == "FSRCNN":
+        model = FSRCNN()
+
+def get_data(val = False):
+    preup = ["SRCNN", "VDSR"]
+    if model_args["name"] in preup:
+        train = UpscaledDataset(train_folder).get_loader(batch_size, True)
+        val = UpscaledDataset(val_folder).get_loader(batch_size, True)
+    else:
+        train = RegularDataset(train_folder).get_loader(batch_size, True)
+        val = RegularDataset(val_folder).get_loader(batch_size, True)
+    return train, val
+
+
 def process():
-    model = SuperResolutor()
+    model = get_model()
+    train, val = get_data()
+
     save_path = os.path.join(save_folder, "model.pth")
 
     try:
@@ -34,7 +64,6 @@ def process():
 
     model = model.cuda()
 
-    train = SampleDataset(train_folder).get_loader(batch_size, True)
 
     loss_func = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -74,22 +103,25 @@ def process():
 
 
 def read_args():
-    global args
+    global model_args
     global train_folder
-    global save_path
+    global val_folder
+    global save_folder
     global batch_size
     global epochs
     
+    args = {}
     with open("parameters.json", "r") as read_file:
-        args = json.load(read_file)["training"]
+        args = json.load(read_file)
 
-    train_folder = args["train_folder"]
-    save_folder = args["save_folder"]
-    batch_size = args["batch_size"]
-    epochs = args["n_epochs"]
+    train_folder = args["training"]["train_folder"]
+    val_folder = args["training"]["val_folder"]
+    save_folder = args["training"]["save_folder"]
+    batch_size = args["training"]["batch_size"]
+    epochs = args["training"]["n_epochs"]
     os.makedirs(save_folder, exist_ok=True)
+    model_args = args["model"]
     
-
 if __name__ == "__main__":
     read_args()
     process()

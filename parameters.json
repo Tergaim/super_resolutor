@@ -2,13 +2,18 @@
     "create_dataset": {
         "source_folder" : "",
         "target_folder" : "",
-        "samples_per_image" : 64,
+        "samples_per_image" : 64
+    },
+    "model":{
+        "name": "FSRCNN",
         "sample_size" : 64,
-        "down_factor" : 2
+        "down_factor" : 2,
+        "n_layers": 20
     },
     "training":{
         "save_folder": "",
         "train_folder" : "",
+        "val_folder" : "",
         "n_epochs" : 20,
         "batch_size": 20
     }
