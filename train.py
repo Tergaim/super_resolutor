@@ -5,9 +5,10 @@ from matplotlib.style import available
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.nn.functional import interpolate
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-from model_postup import FSRCNN
+from model_postup import FSRCNN, SuperResolutor
 
 from model_preup import SuperResolutorUpscaled, SRCNN, VDSR
 from sample_dataset import UpscaledDataset, RegularDataset
@@ -19,7 +20,7 @@ save_folder = ''
 batch_size = 20
 epochs = 200
 
-writer = SummaryWriter(log_dir="runs/residualrgb")
+writer = SummaryWriter(log_dir="runs/fsrcnn")
 
 def psnr(out, original, max_val=1):
     mse = torch.mean((out - original) ** 2)
@@ -37,7 +38,9 @@ def get_model():
     elif model_args["name"] == "VDSR":
         model = VDSR(model_args["n_layers"])
     elif model_args["name"] == "FSRCNN":
-        model = FSRCNN()
+        # model = FSRCNN()
+        model = SuperResolutor()
+    return model
 
 def get_data(val = False):
     preup = ["SRCNN", "VDSR"]
@@ -94,7 +97,7 @@ def process():
                 writer.add_scalar('PSNR/train', psnr_train, step)
             
             if (step %300 == 0):
-                writer.add_images("input/output/target",torch.cat((batch_downsized[:8], output_train[:8], batch_original[:8])),step)
+                writer.add_images("input/output/target",torch.cat((interpolate(batch_downsized[:8],(64,64)), output_train[:8], batch_original[:8])),step)
                 # writer.add_images("input",batch_downsized,step)
                 # writer.add_images("output",output_train,step)
                 # writer.add_images("target",batch_original,step)

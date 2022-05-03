@@ -7,7 +7,7 @@ import os
 class UpscaledDataset(Dataset):
     def __init__(self, data_folder):
         super().__init__()
-        self.downsized_folder = os.path.join(data_folder, "downsized64")
+        self.downsized_folder = os.path.join(data_folder, "downsized")
         self.original_folder = os.path.join(data_folder, "original")
         self.list_pictures = [filename for filename in os.listdir(self.original_folder) if filename[-3:] == "jpg"]
 
@@ -28,7 +28,7 @@ class UpscaledDataset(Dataset):
 class RegularDataset(Dataset):
     def __init__(self, data_folder):
         super().__init__()
-        self.downsized_folder = os.path.join(data_folder, "downsized32")
+        self.downsized_folder = os.path.join(data_folder, "downsizedsmall")
         self.original_folder = os.path.join(data_folder, "original")
         self.list_pictures = [filename for filename in os.listdir(self.original_folder) if filename[-3:] == "jpg"]
 
